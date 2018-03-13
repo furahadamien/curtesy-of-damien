@@ -141,9 +141,9 @@ int bmp_mask( char* input_bmp_filename, char* output_bmp_filename,
 
   for(int x = x_min; x<= x_max; x++){
     for( int y = y_min; y<=y_max; y++){
-      pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 2 ] = blue;
+      pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 2 ] = red;
       pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 1 ] = green;
-      pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 0 ] = red;
+      pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 0 ] = blue;
     }
   }
 
@@ -198,31 +198,78 @@ int bmp_collage( char* bmp_input1, char* bmp_input2, char* bmp_result, int x_off
   //printf( "BMP_COLLAGE is not yet implemented. Please help complete this code!\n" );
 
 
-  unsigned int canvas_width = max(img_width1,img_width2+x_offset);
-  unsigned int canvas_height = max(img_height1,img_height2+y_offset);
+  unsigned int canvas_width; //= max(img_width1,img_width2+x_offset);
+  unsigned int canvas_height; //= max(img_height1,img_height2+y_offset);
+
+
+
+if(y_offset < 0){
+ if(img_height2 + y_offset > img_height1){
+
+   canvas_height = img_height2;
+
+ }
+ else{
+
+  canvas_height = img_height1 - y_offset;
+
+ }
+}else{
+// Offset is positive so do as before
+  canvas_height = max(img_height1,img_height2+y_offset);
+}
+
+if(x_offset < 0){
+
+  if(img_width2 + x_offset > img_width1){
+
+      canvas_width = img_width2;
+
+  }else{
+
+    canvas_width = img_width1 - x_offset;
+
+  }
+
+}else{
+
+ // Offset is positive so do as before
+  canvas_width=max(img_width1,img_width2+x_offset);
+
+}
+
+
+
 
   unsigned int canvas_x_max = canvas_width;
   unsigned int canvas_y_max = canvas_height;
 
-  unsigned int img1_x_max = img_width1;
-  unsigned int img1_y_max = img_height1;
+  // unsigned int img1_x_max = img_width1;
+  // unsigned int img1_y_max = img_height1;
 
   //img 2
-  unsigned int img2_x_min = x_offset;
-  unsigned int img2_y_min = y_offset;
-  unsigned int img2_x_max = img_width2+x_offset;
-  unsigned int img2_y_max = img_height2+y_offset;
+  unsigned int img2_x_min ;
+  unsigned int img2_y_min ;
+  unsigned int img2_x_max ;
+  unsigned int img2_y_max ;
+
+  unsigned int img1_x_min ;
+  unsigned int img1_y_min ;
+  unsigned int img1_x_max ;
+  unsigned int img1_y_max ;
 
     /*cnvas_img_data will contain the data for the tempory header of the file that we
     create after collaging  
     */
    unsigned char* canvas_img_data;
-   canvas_img_data = (unsigned char*) malloc(data_offset1+(canvas_width*canvas_height*bits_per_pixel1));
+   
   
    unsigned int padding = (4-((((canvas_width)*(bits_per_pixel1))/8)%4))%4;
-   unsigned int canvas_total_size = (data_offset1+canvas_width*canvas_height)+padding; 
+   unsigned int canvas_total_size = (data_offset1)+((canvas_width+padding)*canvas_height); 
+   canvas_img_data = (unsigned char*) calloc(data_offset1+(((canvas_width+padding)*canvas_height)*bits_per_pixel1/8),sizeof(unsigned int));
   unsigned int canvas_img_size = canvas_total_size - data_offset1;
-  memcpy(canvas_img_data, img_data1,data_offset1);
+  memcpy(canvas_img_data, img_data2,data_offset2);
+  //memcpy(canvas_img_data,img_data1,data_size1);
 
 
  memcpy(canvas_img_data +18 , &canvas_width, sizeof(unsigned int));
@@ -236,20 +283,78 @@ int bmp_collage( char* bmp_input1, char* bmp_input2, char* bmp_result, int x_off
 
   unsigned int red,green,blue;
   unsigned int num_colors = bits_per_pixel1/8;
+
+  unsigned int x_offset_img1;
+  unsigned int x_offset_img2;
+  unsigned int y_offset_img1;
+  unsigned int y_offset_img2;
+
+  if(x_offset >= 0){
+    x_offset_img1 = 0;
+    x_offset_img2 = x_offset;
+  }else{
+    x_offset_img2 = 0;
+    x_offset_img1 = (x_offset * (-1));
+  }
+
+  if(y_offset >= 0){
+    y_offset_img1 = 0;
+    y_offset_img2 = y_offset;
+  }else{
+    y_offset_img2 = 0;
+    y_offset_img1 = (y_offset * (-1));
+  }
+
+  img2_x_min = x_offset_img2;
+  img2_y_min = y_offset_img2;
+  img2_x_max = img_width2 + x_offset_img2;
+  img2_y_max = img_height2 + y_offset_img2;
+
+
+  img1_x_min = x_offset_img1;
+  img1_y_min = y_offset_img1;
+  img1_x_max = img_width1 + x_offset_img1;
+  img1_y_max = img_height1 + y_offset_img1;
+
+
+
+printf("Img1 x min %d\n",img1_x_min );
+printf(" img1 x max %d\n",img1_x_max );
+printf(" imag 1 y min%d\n",img1_y_min );
+printf("img1 y max %d\n",img1_y_max);
+printf("Img2 x min %d\n",img2_x_min );
+printf(" img2 x max %d\n",img2_x_max );
+printf(" imag 2 y min%d\n",img2_y_min );
+printf("img2 y max %d\n",img2_y_max);
+printf(" canvas x max %d\n", canvas_x_max );
+printf("canvas y max %d\n", canvas_y_max );
+printf("canvas_height %d\n",canvas_height );
+printf("canvas_width %d\n",canvas_width );
+printf("x_offset im1 =%d\n",x_offset_img1 );
+printf("y_offset im1 =%d\n",y_offset_img1 );
+printf("x_offset im2 =%d\n",x_offset_img2 );
+printf("y_offset im2 =%d\n",canvas_width + padding );
+printf("bits_per_pixel1 =%d\n",bits_per_pixel1 );
+printf("bits_per_pixel2 =%d\n",bits_per_pixel2 );
+
   
   for(int x = 0; x<=canvas_x_max; x++){
     for(int y=0; y<=canvas_y_max;y++){
       if(fit(x,y,img2_x_max,img2_x_min,img2_y_max,img2_y_min)){
+        
         //put pixels of img2
-        blue = img2_pixel_data[ (y-y_offset)*(img_width2*num_colors+padding2) + (x-x_offset)*num_colors + 2 ] ;
-        green = img2_pixel_data[ (y-y_offset)*(img_width2*num_colors+padding2) + (x-x_offset)*num_colors + 1 ] ;
-        red = img2_pixel_data[ (y-y_offset)*(img_width2*num_colors+padding2) + (x-x_offset)*num_colors + 0 ] ;
+        blue = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 2 ] ;
+        green = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 1 ] ;
+        red = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 0 ] ;
       }
-      else if(fit(x,y,img1_x_max,0,img1_y_max,0)){
+      else if(fit(x,y,img1_x_max,img1_x_min,img1_y_max,img1_y_min)){
+        if(x == 0){
+        //printf("img1 won x=%d, y=%d\n", x-x_offset_img1, y-y_offset_img1);
+        }
         //put pixel of img1
-        blue = img1_pixel_data[ y*(img_width1*num_colors+padding1) + x*num_colors + 2 ] ;
-        green = img1_pixel_data[ y*(img_width1*num_colors+padding1) + x*num_colors + 1 ] ;
-        red = img1_pixel_data[ y*(img_width1*num_colors+padding1) + x*num_colors + 0 ] ;
+        blue = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 2 ] ;
+        green = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 1 ] ;
+        red = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 0 ] ;
 
       }else{
         //these are default pixels(white)
@@ -264,13 +369,14 @@ int bmp_collage( char* bmp_input1, char* bmp_input2, char* bmp_result, int x_off
       canvas_pixel_data[ y*(canvas_width*num_colors+padding) + x*num_colors + 0 ] = red;
     }
   }
+
   //finally i write all my obatined pixels into the result bmp file
   FILE *output_bmp_file = fopen(bmp_result, "wb");
 
 fwrite(canvas_img_data,sizeof(unsigned int),canvas_total_size,output_bmp_file);
 
 fclose(output_bmp_file);
-
+//fclose(canvas_img_data);
 
   // TO HERE!
       
