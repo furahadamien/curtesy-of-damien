@@ -25,7 +25,7 @@ top of the first image or the image should be attached to the first depending on
 y and x values
 */
 int  fit(int x,int y,int x_max,int x_min,int y_max, int y_min){
-  if(x<=x_max & x>=x_min & y<=y_max& y>=y_min){
+  if(x<x_max & x>=x_min & y<y_max& y>=y_min){
     return 1;
   }else{
     return 0;
@@ -33,6 +33,7 @@ int  fit(int x,int y,int x_max,int x_min,int y_max, int y_min){
 }
 
 //max function for Q3
+//This function returns the maximum of two numbers
 /*I call this function in question three to check if the width& and height of 
 the second image plus the offset is greater than that of the first image so that
  i can calculate the area when my result image will be
@@ -83,13 +84,14 @@ int bmp_open( char* bmp_filename,        unsigned int *width,
   fclose(bmpfile);
   bmpfile = fopen(bmp_filename, "rb" );
 
-  //SET DATA SIZE USIG BYTE 2
+  //SET DATA SIZE USING BYTE 2
 
   /*setting the value to the parameters depending on type at which they are
-   in the header. Heap memory used instead of stack memory
+   in the header. Heap memory used instead of stack memory for image data
   */
   *img_data = (unsigned char *) malloc(*data_size);
   fread(*img_data, 1, *data_size, bmpfile);
+
   *width = *(unsigned int *)(*img_data + 18); 
   *height = *(unsigned int *)(*img_data + 22); 
   *bits_per_pixel = *(unsigned int *)(*img_data + 28); 
@@ -128,8 +130,6 @@ int bmp_mask( char* input_bmp_filename, char* output_bmp_filename,
   if( open_return_code ){ printf( "bmp_open failed. Returning from bmp_mask without attempting changes.\n" ); return -1; }
  
   // YOUR CODE FOR Q2 SHOULD REPLACE EVERYTHING FROM HERE
-  //printf( "BMP_MASK is not yet implemented. Please help complete this code!\n" );
-
 
   /*In this function, i use two nested loops.One loop iterates throught the vertical
     pixels while the other goes through the horizontal pixels while setting the appropriate 
@@ -139,8 +139,11 @@ int bmp_mask( char* input_bmp_filename, char* output_bmp_filename,
   unsigned char *pixel_data = img_data + data_offset;
   unsigned char num_colors = bits_per_pixel/8;
 
+  //iterating through the pixels
   for(int x = x_min; x<= x_max; x++){
     for( int y = y_min; y<=y_max; y++){
+
+      //setting the colors as done in bmp_info.c
       pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 2 ] = red;
       pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 1 ] = green;
       pixel_data[ y*(img_width*num_colors+padding) + x*num_colors + 0 ] = blue;
@@ -149,7 +152,8 @@ int bmp_mask( char* input_bmp_filename, char* output_bmp_filename,
 
 FILE *output_bmp_file = fopen(output_bmp_filename, "wb");
 
-fwrite(img_data,sizeof(unsigned int),data_size,output_bmp_file);
+//writing the output image from the collected image data
+fwrite(img_data, sizeof(unsigned int), data_size,output_bmp_file);
 
 fclose(output_bmp_file);
 
@@ -195,20 +199,17 @@ int bmp_collage( char* bmp_input1, char* bmp_input2, char* bmp_result, int x_off
     I run two for loops that through the horizontal and vertical bytes of the file i am 
     collaging it while setting the pixels appropriately based on the conditions that i set 
   */
-  //printf( "BMP_COLLAGE is not yet implemented. Please help complete this code!\n" );
+  
+  unsigned int canvas_width; 
+  unsigned int canvas_height; 
 
-
-  unsigned int canvas_width; //= max(img_width1,img_width2+x_offset);
-  unsigned int canvas_height; //= max(img_height1,img_height2+y_offset);
-
-
-  printf("first = %d , second= %d\n",(img_height2+ y_offset),img_height1);
-
+//setting the dimensions of the template(canvas) imagedepending on provided offsets
+//I call the MAX helper function
 if(y_offset < 0){
   
   canvas_height = max(img_height1 - y_offset,img_height2);
 }else{
-// Offset is positive so do as before
+
   canvas_height = max(img_height1,img_height2+y_offset);
 }
 
@@ -216,66 +217,72 @@ if(x_offset < 0){
   canvas_width = max(img_width1 - x_offset,img_width2);
 }else{
 
- // Offset is positive so do as before
+ 
   canvas_width=max(img_width1,img_width2+x_offset);
 
 }
 
-
-
-
   unsigned int canvas_x_max = canvas_width;
   unsigned int canvas_y_max = canvas_height;
 
-  // unsigned int img1_x_max = img_width1;
-  // unsigned int img1_y_max = img_height1;
-
-  //img 2
+  //x-y boundaries for img2
   unsigned int img2_x_min ;
   unsigned int img2_y_min ;
   unsigned int img2_x_max ;
   unsigned int img2_y_max ;
 
+  //x-y boundaries for img1
   unsigned int img1_x_min ;
   unsigned int img1_y_min ;
   unsigned int img1_x_max ;
   unsigned int img1_y_max ;
 
-    /*cnvas_img_data will contain the data for the tempory header of the file that we
+    /*canvas_img_data will contain the data for the tempory header of the file that we
     create after collaging  
     */
-   unsigned char* canvas_img_data;
-      unsigned int padding = (4-((((canvas_width)*(bits_per_pixel1))/8)%4))%4;
+  unsigned char* canvas_img_data; //holds data for th etemplate image
+  unsigned int padding = (4-((((canvas_width)*(bits_per_pixel1))/8)%4))%4;
     
-   unsigned int width_b = (canvas_width*bits_per_pixel1);
-   unsigned int height_b = (canvas_height*bits_per_pixel1);
-   unsigned int padding_b = padding/8;
+  unsigned int width_b = (canvas_width * bits_per_pixel1);
+  unsigned int height_b = (canvas_height * bits_per_pixel1);
+  unsigned int padding_b = padding/8;
    
-   unsigned int row_width_byte = (width_b + padding_b)/8;
+  unsigned int row_width_byte = (width_b + padding_b)/8;
   
-   unsigned int canvas_total_size = (data_offset1)+((width_b+padding_b)*height_b/8); 
-   canvas_img_data = (unsigned char*) calloc((canvas_total_size),sizeof(unsigned int));
+  unsigned int canvas_total_size = (data_offset1)+((width_b+padding_b)*height_b/8); //combined img size
+  canvas_img_data = (unsigned char*) calloc((canvas_total_size),sizeof(unsigned int));
   unsigned int canvas_img_size = canvas_total_size - data_offset1;
-  memcpy(canvas_img_data, img_data2,data_offset2+padding);
-  //memcpy(canvas_img_data,img_data1,data_size1);
 
+  unsigned int num_colors; //helps in setting pixels
 
+  if(data_offset1 > data_offset2){
+    memcpy(canvas_img_data, img_data1,data_offset1);
+    num_colors = bits_per_pixel1/8; //relative to img1
+  }
+  else{
+    memcpy(canvas_img_data,img_data2,data_offset2); //relative to img2
+    num_colors = bits_per_pixel2 / 8;
+  }
+
+//adjusting the header
  memcpy(canvas_img_data +18 , &canvas_width, sizeof(unsigned int));
  memcpy(canvas_img_data +22 , &canvas_height, sizeof(unsigned int));
  memcpy(canvas_img_data +2 , &canvas_total_size, sizeof(unsigned int));
  memcpy(canvas_img_data + 34,&canvas_img_size,sizeof(unsigned int));
 
-  unsigned char *canvas_pixel_data = canvas_img_data + data_offset1;
-  unsigned char *img1_pixel_data = img_data1 + data_offset1;
-  unsigned char *img2_pixel_data = img_data2 + data_offset2;
+ unsigned char *canvas_pixel_data = canvas_img_data + data_offset1;
+ unsigned char *img1_pixel_data = img_data1 + data_offset1;
+ unsigned char *img2_pixel_data = img_data2 + data_offset2;
 
-  unsigned int red,green,blue;
-  unsigned int num_colors = (bits_per_pixel1)/8;
+ unsigned int red,green,blue;
+ unsigned int num_colors1 = (bits_per_pixel1)/8;
+ unsigned int num_colors2 = (bits_per_pixel2)/8;
 
-  unsigned int x_offset_img1;
-  unsigned int x_offset_img2;
-  unsigned int y_offset_img1;
-  unsigned int y_offset_img2;
+ //getting offsets for img1 and img2 to calculate where the images meet
+ unsigned int x_offset_img1;
+ unsigned int x_offset_img2;
+ unsigned int y_offset_img1;
+ unsigned int y_offset_img2;
 
   if(x_offset >= 0){
     x_offset_img1 = 0;
@@ -293,71 +300,46 @@ if(x_offset < 0){
     y_offset_img1 = -y_offset;
   }
 
+  //img2 boundaries relative to its offsets
   img2_x_min = x_offset_img2;
   img2_y_min = y_offset_img2;
   img2_x_max = img_width2 + x_offset_img2;
   img2_y_max = img_height2 + y_offset_img2;
 
-
+  //img1 boundaries relative to its offsets
   img1_x_min = x_offset_img1;
   img1_y_min = y_offset_img1;
   img1_x_max = img_width1 + x_offset_img1;
   img1_y_max = img_height1 + y_offset_img1;
 
-
-
-printf("Img1 x min %d\n",img1_x_min );
-printf(" img1 x max %d\n",img1_x_max );
-printf(" imag 1 y min%d\n",img1_y_min );
-printf("img1 y max %d\n",img1_y_max);
-printf("Img2 x min %d\n",img2_x_min );
-printf(" img2 x max %d\n",img2_x_max );
-printf(" imag 2 y min%d\n",img2_y_min );
-printf("img2 y max %d\n",img2_y_max);
-printf(" canvas x max %d\n", canvas_x_max );
-printf("canvas y max %d\n", canvas_y_max );
-printf("canvas_height %d\n",canvas_height );
-printf("canvas_width %d\n",canvas_width );
-printf("x_offset im1 =%d\n",x_offset_img1 );
-printf("y_offset im1 =%d\n",y_offset_img1 );
-printf("x_offset im2 =%d\n",x_offset_img2 );
-printf("y_offset im2 =%d\n",y_offset_img2 );
-printf("offset1 =%d\n",bits_per_pixel1 );
-printf("offset2 =%d\n",bits_per_pixel2 );
-printf("padding1 =%d\n",padding1);
-printf("padding2 =%d\n",padding2);
-printf("padding =%d\n",padding);
-
-
-
-  
-  for(int y=0; y<=canvas_y_max;y++){
-    for(int x=0; x<=canvas_x_max;x++){
-    //printf("x= %d and y= %d\n",x,y);
+  /*This nested for loop sets the colors on the pixels by first going in the horizonta direction the vertical
+    I use the FIT function to check if at the specific poin i shoud input the pixels of img1 or img2 or nothing
+  */
+  for(int y = 0; y <= canvas_y_max; y++){
+    for(int x = 0; x<= canvas_x_max; x++){
       if(fit(x,y,img2_x_max,img2_x_min,img2_y_max,img2_y_min)){
         //put pixels of img2
-        blue = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 2 ] ;
-        green = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 1 ] ;
-        red = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 0 ] ;
+        blue = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors2+padding2) + (x-x_offset_img2)*num_colors2 + 2 ] ;
+        green = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors2+padding2) + (x-x_offset_img2)*num_colors2 + 1 ] ;
+        red = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors2+padding2) + (x-x_offset_img2)*num_colors2 + 0 ] ;
       
       }
       else if(fit(x,y,img1_x_max,img1_x_min,img1_y_max,img1_y_min)){
-        if(x==0 && y < 100){
-      //printf("x= %d and y = %d\n",x,y);
-    }
+        
         //put pixel of img1
-        blue = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 2 ] ;
-        green = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 1 ] ;
-        red = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 0 ] ;
+        blue = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors1+padding1) + (x-x_offset_img1)*num_colors1 + 2 ] ;
+        green = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors1+padding1) + (x-x_offset_img1)*num_colors1 + 1 ] ;
+        red = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors1+padding1) + (x-x_offset_img1)*num_colors1 + 0 ] ;
 
       }else{
-        //these are default pixels(white)
+        //these are default pixels(white) when this part of canvas image shouldnt have img1 or img2 pixels
         //basically just sets the pixels of the background that we have calculated
         red = 255;
         green = 255;
         blue = 255;
 
       }
+      //I set the pixels of theh template image to respective color values
       canvas_pixel_data[ y*(canvas_width*num_colors+padding) + x*num_colors + 2 ] = blue;
       canvas_pixel_data[ y*(canvas_width*num_colors+padding) + x*num_colors + 1 ] = green;
       canvas_pixel_data[ y*(canvas_width*num_colors+padding) + x*num_colors + 0 ] = red;
