@@ -202,35 +202,18 @@ int bmp_collage( char* bmp_input1, char* bmp_input2, char* bmp_result, int x_off
   unsigned int canvas_height; //= max(img_height1,img_height2+y_offset);
 
 
+  printf("first = %d , second= %d\n",(img_height2+ y_offset),img_height1);
 
 if(y_offset < 0){
- if(img_height2 + y_offset > img_height1){
-
-   canvas_height = img_height2;
-
- }
- else{
-
-  canvas_height = img_height1 - y_offset;
-
- }
+  
+  canvas_height = max(img_height1 - y_offset,img_height2);
 }else{
 // Offset is positive so do as before
   canvas_height = max(img_height1,img_height2+y_offset);
 }
 
 if(x_offset < 0){
-
-  if(img_width2 + x_offset > img_width1){
-
-      canvas_width = img_width2;
-
-  }else{
-
-    canvas_width = img_width1 - x_offset;
-
-  }
-
+  canvas_width = max(img_width1 - x_offset,img_width2);
 }else{
 
  // Offset is positive so do as before
@@ -262,13 +245,18 @@ if(x_offset < 0){
     create after collaging  
     */
    unsigned char* canvas_img_data;
+      unsigned int padding = (4-((((canvas_width)*(bits_per_pixel1))/8)%4))%4;
+    
+   unsigned int width_b = (canvas_width*bits_per_pixel1);
+   unsigned int height_b = (canvas_height*bits_per_pixel1);
+   unsigned int padding_b = padding/8;
    
+   unsigned int row_width_byte = (width_b + padding_b)/8;
   
-   unsigned int padding = (4-((((canvas_width)*(bits_per_pixel1))/8)%4))%4;
-   unsigned int canvas_total_size = (data_offset1)+((canvas_width+padding)*canvas_height); 
-   canvas_img_data = (unsigned char*) calloc(data_offset1+(((canvas_width+padding)*canvas_height)*bits_per_pixel1/8),sizeof(unsigned int));
+   unsigned int canvas_total_size = (data_offset1)+((width_b+padding_b)*height_b/8); 
+   canvas_img_data = (unsigned char*) calloc((canvas_total_size),sizeof(unsigned int));
   unsigned int canvas_img_size = canvas_total_size - data_offset1;
-  memcpy(canvas_img_data, img_data2,data_offset2);
+  memcpy(canvas_img_data, img_data2,data_offset2+padding);
   //memcpy(canvas_img_data,img_data1,data_size1);
 
 
@@ -282,7 +270,7 @@ if(x_offset < 0){
   unsigned char *img2_pixel_data = img_data2 + data_offset2;
 
   unsigned int red,green,blue;
-  unsigned int num_colors = bits_per_pixel1/8;
+  unsigned int num_colors = (bits_per_pixel1)/8;
 
   unsigned int x_offset_img1;
   unsigned int x_offset_img2;
@@ -294,7 +282,7 @@ if(x_offset < 0){
     x_offset_img2 = x_offset;
   }else{
     x_offset_img2 = 0;
-    x_offset_img1 = (x_offset * (-1));
+    x_offset_img1 = -x_offset;
   }
 
   if(y_offset >= 0){
@@ -302,7 +290,7 @@ if(x_offset < 0){
     y_offset_img2 = y_offset;
   }else{
     y_offset_img2 = 0;
-    y_offset_img1 = (y_offset * (-1));
+    y_offset_img1 = -y_offset;
   }
 
   img2_x_min = x_offset_img2;
@@ -333,24 +321,30 @@ printf("canvas_width %d\n",canvas_width );
 printf("x_offset im1 =%d\n",x_offset_img1 );
 printf("y_offset im1 =%d\n",y_offset_img1 );
 printf("x_offset im2 =%d\n",x_offset_img2 );
-printf("y_offset im2 =%d\n",canvas_width + padding );
-printf("bits_per_pixel1 =%d\n",bits_per_pixel1 );
-printf("bits_per_pixel2 =%d\n",bits_per_pixel2 );
+printf("y_offset im2 =%d\n",y_offset_img2 );
+printf("offset1 =%d\n",bits_per_pixel1 );
+printf("offset2 =%d\n",bits_per_pixel2 );
+printf("padding1 =%d\n",padding1);
+printf("padding2 =%d\n",padding2);
+printf("padding =%d\n",padding);
+
+
 
   
-  for(int x = 0; x<=canvas_x_max; x++){
-    for(int y=0; y<=canvas_y_max;y++){
+  for(int y=0; y<=canvas_y_max;y++){
+    for(int x=0; x<=canvas_x_max;x++){
+    //printf("x= %d and y= %d\n",x,y);
       if(fit(x,y,img2_x_max,img2_x_min,img2_y_max,img2_y_min)){
-        
         //put pixels of img2
         blue = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 2 ] ;
         green = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 1 ] ;
         red = img2_pixel_data[ (y-y_offset_img2)*(img_width2*num_colors+padding2) + (x-x_offset_img2)*num_colors + 0 ] ;
+      
       }
       else if(fit(x,y,img1_x_max,img1_x_min,img1_y_max,img1_y_min)){
-        if(x == 0){
-        //printf("img1 won x=%d, y=%d\n", x-x_offset_img1, y-y_offset_img1);
-        }
+        if(x==0 && y < 100){
+      //printf("x= %d and y = %d\n",x,y);
+    }
         //put pixel of img1
         blue = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 2 ] ;
         green = img1_pixel_data[ (y-y_offset_img1)*(img_width1*num_colors+padding1) + (x-x_offset_img1)*num_colors + 1 ] ;
@@ -382,6 +376,7 @@ fclose(output_bmp_file);
       
   bmp_close( &img_data1 );
   bmp_close( &img_data2 );
+  bmp_close( &canvas_img_data);
   
   return 0;
-}                  
+}
